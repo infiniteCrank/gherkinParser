@@ -82,7 +82,48 @@ func parseFeatureFile(fileContent string) Feature {
 		}
 	}
 
+	// Generate outlines after collecting scenarios
+	feature.ScenarioOutlines = findScenarioOutlines(feature.Scenarios)
+
 	return feature
+}
+
+// helper function to parse scenario outlines out of the document
+func findScenarioOutlines(scenarios []Scenario) []ScenarioOutline {
+	var outlines []ScenarioOutline
+	stepMappings := make(map[string][]Scenario) // Map of normalized step strings to scenarios
+
+	// Group scenarios by steps (ignoring tags and names)
+	for _, scenario := range scenarios {
+		// Create a key based on the steps, ignoring tags or names
+		key := strings.Join(scenario.Steps, "|")
+		stepMappings[key] = append(stepMappings[key], scenario)
+	}
+
+	// Create Scenario Outlines for groups with more than one scenario
+	for _, group := range stepMappings {
+		if len(group) > 1 {
+			var outline ScenarioOutline
+			outline.Name = group[0].Name // Base name; you may want to adjust this logic
+
+			// Build the sample table from grouped scenarios
+			var exampleRows []Row
+			for _, scenario := range group {
+				// Assume the first step contains the test data key-value pairs
+				row := make([]string, len(scenario.Steps))
+				for i := range scenario.Steps {
+					row[i] = "DATA_VALUE" // Placeholder; you would replace with actual values
+				}
+				exampleRows = append(exampleRows, Row{Cells: row})
+			}
+
+			outline.Steps = group[0].Steps
+			outline.Examples = []Example{{Title: "Example", Rows: exampleRows}}
+			outlines = append(outlines, outline)
+		}
+	}
+
+	return outlines
 }
 
 // Helper function to identify common steps across scenarios

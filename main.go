@@ -11,6 +11,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type ScenarioOutline struct {
+	Name     string
+	Steps    []string  // List of steps, same as in scenario
+	Examples []Example // Example tables
+}
+
 type Scenario struct {
 	Name     string
 	Steps    []string  // List of steps

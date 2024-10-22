@@ -33,49 +33,6 @@ type Feature struct {
 	Background []string
 }
 
-func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
-	stepCount := make(map[string]int)
-	for _, scenario := range scenarios {
-		for _, step := range scenario.Steps {
-			stepCount[step]++
-		}
-	}
-
-	// Identify steps that are common to all scenarios
-	var commonSteps []string
-	for step, count := range stepCount {
-		if count == len(scenarios) {
-			commonSteps = append(commonSteps, step)
-		}
-	}
-
-	// Prepare the new scenarios by removing common steps
-	var newScenarios []Scenario
-	for _, scenario := range scenarios {
-		var newScenario Scenario
-		newScenario.Name = scenario.Name
-		newScenario.Tags = scenario.Tags
-
-		for _, step := range scenario.Steps {
-			if !contains(commonSteps, step) {
-				newScenario.Steps = append(newScenario.Steps, step)
-			}
-		}
-		newScenarios = append(newScenarios, newScenario)
-	}
-
-	return commonSteps, newScenarios
-}
-
-func contains(slice []string, item string) bool {
-	for _, a := range slice {
-		if a == item {
-			return true
-		}
-	}
-	return false
-}
-
 func parseFeatureFile(fileContent string) Feature {
 	uuid := &messages.UUID{}
 	reader := strings.NewReader(fileContent)
@@ -121,6 +78,51 @@ func parseFeatureFile(fileContent string) Feature {
 	return feature
 }
 
+// findCommonSteps identifies steps common among scenarios and returns them
+func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
+	stepCount := make(map[string]int)
+	for _, scenario := range scenarios {
+		for _, step := range scenario.Steps {
+			stepCount[step]++
+		}
+	}
+
+	// Identify steps that are common to all scenarios
+	var commonSteps []string
+	for step, count := range stepCount {
+		if count == len(scenarios) {
+			commonSteps = append(commonSteps, step)
+		}
+	}
+
+	// Prepare new scenarios by removing common steps
+	var newScenarios []Scenario
+	for _, scenario := range scenarios {
+		var newScenario Scenario
+		newScenario.Name = scenario.Name
+		newScenario.Tags = scenario.Tags
+
+		for _, step := range scenario.Steps {
+			if !contains(commonSteps, step) {
+				newScenario.Steps = append(newScenario.Steps, step)
+			}
+		}
+		newScenarios = append(newScenarios, newScenario)
+	}
+
+	return commonSteps, newScenarios
+}
+
+// Helper function to check if a slice contains a value
+func contains(slice []string, item string) bool {
+	for _, a := range slice {
+		if a == item {
+			return true
+		}
+	}
+	return false
+}
+
 // Generate a Gherkin feature file from the structured Feature data
 func generateFeatureFile(feature Feature) string {
 	var builder strings.Builder
@@ -135,6 +137,7 @@ func generateFeatureFile(feature Feature) string {
 		builder.WriteString("Background:\n")
 		for _, step := range commonSteps {
 			builder.WriteString("  Given " + step + "\n") // Treating all common steps as Given
+
 		}
 		builder.WriteString("\n")
 	}
@@ -148,9 +151,17 @@ func generateFeatureFile(feature Feature) string {
 			builder.WriteString("  @" + tag + "\n")
 		}
 
-		// Include Steps
+		// Include Steps with appropriate prefixes based on the context
 		for _, step := range scenario.Steps {
-			builder.WriteString("  When " + step + "\n") // Defaulting to "When" but adapt as necessary
+			if strings.Contains(step, "entered") || strings.Contains(step, "opened") {
+				builder.WriteString("  Given " + step + "\n") // Adjust this to use "Given" for entering or opening contexts
+			} else if strings.Contains(step, "clicks") {
+				builder.WriteString("  When " + step + "\n") // Using "When" context for clicking actions
+			} else if strings.Contains(step, "should") {
+				builder.WriteString("  Then " + step + "\n") // Using "Then" context for result expectations
+			} else {
+				builder.WriteString("  When " + step + "\n") // Fallback to "When" for general steps
+			}
 		}
 
 		builder.WriteString("\n")
@@ -179,7 +190,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		parsedFeature := parseFeatureFile(string(fileContent))
 		regeneratedFeature := generateFeatureFile(parsedFeature)
 
-		w.Write([]byte(regeneratedFeature))
+		w.Write([]byte(regeneratedFeature)) // Output the regenerated feature file
 	} else {
 		http.Error(w, "Invalid request method.", http.StatusMethodNotAllowed)
 	}

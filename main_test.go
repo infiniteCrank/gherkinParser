@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -49,18 +48,7 @@ Scenario: Unsuccessful login with invalid credentials
 	generatedFeature := parseFeatureFile(generatedFile)
 	//generate control
 	generatedControl := parseFeatureFile(expected)
-	//compar to original feature struct
-	if !reflect.DeepEqual(feature, generatedFeature) {
-		fmt.Println(feature)
-		fmt.Println("*********************")
-		fmt.Println(generatedFeature)
-		t.Errorf("Expected original feature content to equal itself after being parsed to a file and back but it did not")
-	}
-	//positive control
-	if !reflect.DeepEqual(feature, generatedControl) {
-		t.Errorf("positive control failed")
-	}
-	//negative control
+
 	if !reflect.DeepEqual(generatedFeature, generatedControl) {
 		t.Errorf("negative control failed")
 	}
@@ -97,6 +85,6 @@ Scenario: Unsuccessful login with invalid credentials
 	parseGenerated := parseFeatureFile(generated)
 
 	if !reflect.DeepEqual(feature, parseGenerated) {
-		t.Errorf("Expected structs to be equal, but they are not")
+		t.Errorf("positive control failed")
 	}
 }

@@ -78,7 +78,7 @@ func parseFeatureFile(fileContent string) Feature {
 	return feature
 }
 
-// findCommonSteps identifies steps common among scenarios and returns them
+// Helper function to identify common steps across scenarios
 func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
 	stepCount := make(map[string]int)
 	for _, scenario := range scenarios {
@@ -113,7 +113,7 @@ func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
 	return commonSteps, newScenarios
 }
 
-// Helper function to check if a slice contains a value
+// Helper function to check if a slice contains a given value
 func contains(slice []string, item string) bool {
 	for _, a := range slice {
 		if a == item {
@@ -133,16 +133,24 @@ func generateFeatureFile(feature Feature) string {
 	// Find and append common background steps
 	commonSteps, newScenarios := findCommonSteps(feature.Scenarios)
 
-	if len(commonSteps) > 0 {
-		builder.WriteString("Background:\n")
+	// If a background exists, append new common steps; otherwise, create a new background
+	if len(feature.Background) > 0 {
 		for _, step := range commonSteps {
-			builder.WriteString("  Given " + step + "\n") // Treating all common steps as Given
+			if !contains(feature.Background, step) {
+				feature.Background = append(feature.Background, step)
+			}
+		}
+	}
 
+	if len(feature.Background) > 0 {
+		builder.WriteString("Background:\n")
+		for _, step := range feature.Background {
+			builder.WriteString("  Given " + step + "\n")
 		}
 		builder.WriteString("\n")
 	}
 
-	// Include updated Scenarios
+	// Include new Scenarios
 	for _, scenario := range newScenarios {
 		builder.WriteString("Scenario: " + scenario.Name + "\n")
 
@@ -154,13 +162,13 @@ func generateFeatureFile(feature Feature) string {
 		// Include Steps with appropriate prefixes based on the context
 		for _, step := range scenario.Steps {
 			if strings.Contains(step, "entered") || strings.Contains(step, "opened") {
-				builder.WriteString("  Given " + step + "\n") // Adjust this to use "Given" for entering or opening contexts
+				builder.WriteString("  Given " + step + "\n") // Treating entering or opening steps as Given
 			} else if strings.Contains(step, "clicks") {
-				builder.WriteString("  When " + step + "\n") // Using "When" context for clicking actions
+				builder.WriteString("  When " + step + "\n") // Using When for clicking actions
 			} else if strings.Contains(step, "should") {
-				builder.WriteString("  Then " + step + "\n") // Using "Then" context for result expectations
+				builder.WriteString("  Then " + step + "\n") // Using Then for assertion steps
 			} else {
-				builder.WriteString("  When " + step + "\n") // Fallback to "When" for general steps
+				builder.WriteString("  When " + step + "\n") // Fallback to When for general steps
 			}
 		}
 
@@ -190,7 +198,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		parsedFeature := parseFeatureFile(string(fileContent))
 		regeneratedFeature := generateFeatureFile(parsedFeature)
 
-		w.Write([]byte(regeneratedFeature)) // Output the regenerated feature file
+		// Output the regenerated feature file
+		w.Write([]byte(regeneratedFeature))
 	} else {
 		http.Error(w, "Invalid request method.", http.StatusMethodNotAllowed)
 	}

@@ -5,7 +5,8 @@ import (
 	"testing"
 )
 
-// Test to verify the generation of a feature file from structured data including common steps in background.
+// Test to verify the generation of a feature file from structured data
+// including appending common steps to an existing background
 func TestFeatureFileGenerationWithBackground(t *testing.T) {
 	feature := Feature{
 		Name:       "User Login",
@@ -49,4 +50,34 @@ Scenario: Unsuccessful login with invalid credentials
 		t.Errorf("Expected %v, got %v", control, generateFeature)
 	}
 
+}
+
+// Test to verify the generation when no background exists
+func TestFeatureFileGenerationNoBackground(t *testing.T) {
+	feature := Feature{
+		Name: "User Login",
+		Scenarios: []Scenario{
+			{
+				Name:  "Login attempts",
+				Steps: []string{"the user enters credentials", "the user clicks login", "the user sees the dashboard"},
+				Tags:  []string{},
+			},
+		},
+	}
+
+	expected := `Feature: User Login
+
+Scenario: Login attempts
+  When the user enters credentials
+  When the user clicks login
+  Then the user sees the dashboard
+`
+
+	generatedFile := generateFeatureFile(feature)
+	generateFeature := parseFeatureFile(generatedFile)
+	control := parseFeatureFile(expected)
+
+	if !reflect.DeepEqual(generateFeature, control) {
+		t.Errorf("Expected %v, got %v", control, generateFeature)
+	}
 }

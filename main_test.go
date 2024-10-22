@@ -1,7 +1,8 @@
 package main
 
 import (
-	"strings"
+	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -42,10 +43,26 @@ Scenario: Unsuccessful login with invalid credentials
   When the user clicks the login button
   Then the user should see an error message
 `
-
-	generated := generateFeatureFile(feature)
-	if strings.TrimSpace(generated) != strings.TrimSpace(expected) {
-		t.Errorf("Expected:\n%s\nGot:\n%s", expected, generated)
+	//generate a feature file from content
+	generatedFile := generateFeatureFile(feature)
+	// Parse the input content.
+	generatedFeature := parseFeatureFile(generatedFile)
+	//generate control
+	generatedControl := parseFeatureFile(expected)
+	//compar to original feature struct
+	if !reflect.DeepEqual(feature, generatedFeature) {
+		fmt.Println(feature)
+		fmt.Println("*********************")
+		fmt.Println(generatedFeature)
+		t.Errorf("Expected original feature content to equal itself after being parsed to a file and back but it did not")
+	}
+	//positive control
+	if !reflect.DeepEqual(feature, generatedControl) {
+		t.Errorf("positive control failed")
+	}
+	//negative control
+	if !reflect.DeepEqual(generatedFeature, generatedControl) {
+		t.Errorf("negative control failed")
 	}
 }
 
@@ -76,8 +93,10 @@ Scenario: Unsuccessful login with invalid credentials
 	// Regenerate the feature file.
 	generated := generateFeatureFile(feature)
 
-	// Ensure that the generated content matches the original input.
-	if strings.TrimSpace(generated) != strings.TrimSpace(inputContent) {
-		t.Errorf("Expected generated file to match the original input:\nExpected:\n%s\nGot:\n%s", inputContent, generated)
+	// parse after generated
+	parseGenerated := parseFeatureFile(generated)
+
+	if !reflect.DeepEqual(feature, parseGenerated) {
+		t.Errorf("Expected structs to be equal, but they are not")
 	}
 }

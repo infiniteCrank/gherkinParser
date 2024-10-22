@@ -1,0 +1,8 @@
+github.com/cucumber/gherkin/go/v27 v27.0.0 h1:waJh5eeq7rrKn5Gf3/FI4G34ypduPRaV8e370dnupDI=
+github.com/cucumber/gherkin/go/v27 v27.0.0/go.mod h1:2JxwYskO0sO4kumc/Nv1g6bMncT5w0lShuKZnmUIhhk=
+github.com/cucumber/messages/go/v22 v22.0.0 h1:hk3ITpEWQ+KWDe619zYcqtaLOfcu9jgClSeps3DlNWI=
+github.com/cucumber/messages/go/v22 v22.0.0/go.mod h1:aZipXTKc0JnjCsXrJnuZpWhtay93k7Rn3Dee7iyPJjs=
+github.com/gofrs/uuid v4.3.1+incompatible h1:0/KbAdpx3UXAx1kEOWHJeOkpbgRFGHVgv+CFIY7dBJI=
+github.com/gofrs/uuid v4.3.1+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
+github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
+github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=

@@ -105,7 +105,7 @@ func generateFeatureFile(feature Feature) string {
 
 		// Include Steps
 		for _, step := range scenario.Steps {
-			builder.WriteString("  When " + step + "\n")
+			builder.WriteString("  When " + step + "\n") // Change this to "Then" if appropriate
 		}
 
 		builder.WriteString("\n")
@@ -131,9 +131,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Parse the Gherkin feature file
-		parseFeatureFile(string(fileContent))
+		parsedFeature := parseFeatureFile(string(fileContent))
+		regeneratedFeature := generateFeatureFile(parsedFeature)
 
-		w.Write([]byte("Feature file parsed successfully!"))
+		w.Write([]byte(regeneratedFeature))
 	} else {
 		http.Error(w, "Invalid request method.", http.StatusMethodNotAllowed)
 	}

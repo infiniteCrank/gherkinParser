@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -24,23 +24,30 @@ func TestFeatureFileGenerationWithBackground(t *testing.T) {
 		},
 	}
 
+	expected := `Feature: User Login
+
+Background:
+  Given the user has opened the login page
+  Given the user clicks the login button
+
+Scenario: Successful login with valid credentials
+  Given the user has entered a valid username
+  Given the user has entered a valid password
+  Then the user should be redirected to the dashboard
+  Then a welcome message should be displayed
+
+Scenario: Unsuccessful login with invalid credentials
+  Given the user has entered an invalid username
+  Given the user has entered an invalid password
+  Then the user should see an error message`
 	// Generate a feature file from the structured data
 	generatedFile := generateFeatureFile(feature)
 	generateFeature := parseFeatureFile(generatedFile)
+	control := parseFeatureFile(expected)
 
-	fmt.Println(feature.Scenarios[0].Name)
-	fmt.Println(feature.Scenarios[1].Name)
-	fmt.Println(feature.Background[0])
-	fmt.Println("***********************************")
-	fmt.Println(generateFeature.Scenarios[0].Name)
-	fmt.Println(generateFeature.Scenarios[1].Name)
-	fmt.Println(generateFeature.Background[0])
-	if feature.Name != generateFeature.Name {
-		fmt.Println("did not pass feature name:" + generateFeature.Name)
+	if !reflect.DeepEqual(generateFeature, control) {
+		t.Errorf("Expected %v, got %v", control, generateFeature)
 	}
-
-	fmt.Println("***********************************")
-	fmt.Println(generatedFile)
 
 }
 

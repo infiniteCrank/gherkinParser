@@ -33,6 +33,49 @@ type Feature struct {
 	Background []string
 }
 
+func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
+	stepCount := make(map[string]int)
+	for _, scenario := range scenarios {
+		for _, step := range scenario.Steps {
+			stepCount[step]++
+		}
+	}
+
+	// Identify steps that are common to all scenarios
+	var commonSteps []string
+	for step, count := range stepCount {
+		if count == len(scenarios) {
+			commonSteps = append(commonSteps, step)
+		}
+	}
+
+	// Prepare the new scenarios by removing common steps
+	var newScenarios []Scenario
+	for _, scenario := range scenarios {
+		var newScenario Scenario
+		newScenario.Name = scenario.Name
+		newScenario.Tags = scenario.Tags
+
+		for _, step := range scenario.Steps {
+			if !contains(commonSteps, step) {
+				newScenario.Steps = append(newScenario.Steps, step)
+			}
+		}
+		newScenarios = append(newScenarios, newScenario)
+	}
+
+	return commonSteps, newScenarios
+}
+
+func contains(slice []string, item string) bool {
+	for _, a := range slice {
+		if a == item {
+			return true
+		}
+	}
+	return false
+}
+
 func parseFeatureFile(fileContent string) Feature {
 	uuid := &messages.UUID{}
 	reader := strings.NewReader(fileContent)
@@ -85,17 +128,19 @@ func generateFeatureFile(feature Feature) string {
 	// Write the feature name
 	builder.WriteString("Feature: " + feature.Name + "\n\n")
 
-	// Include Background if present
-	if len(feature.Background) > 0 {
+	// Find and append common background steps
+	commonSteps, newScenarios := findCommonSteps(feature.Scenarios)
+
+	if len(commonSteps) > 0 {
 		builder.WriteString("Background:\n")
-		for _, step := range feature.Background {
-			builder.WriteString("  Given " + step + "\n")
+		for _, step := range commonSteps {
+			builder.WriteString("  Given " + step + "\n") // Treating all common steps as Given
 		}
 		builder.WriteString("\n")
 	}
 
-	// Include Scenarios
-	for _, scenario := range feature.Scenarios {
+	// Include updated Scenarios
+	for _, scenario := range newScenarios {
 		builder.WriteString("Scenario: " + scenario.Name + "\n")
 
 		// Include Tags if present
@@ -105,7 +150,7 @@ func generateFeatureFile(feature Feature) string {
 
 		// Include Steps
 		for _, step := range scenario.Steps {
-			builder.WriteString("  When " + step + "\n") // Change this to "Then" if appropriate
+			builder.WriteString("  When " + step + "\n") // Defaulting to "When" but adapt as necessary
 		}
 
 		builder.WriteString("\n")

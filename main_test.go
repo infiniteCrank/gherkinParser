@@ -75,11 +75,13 @@ func TestFeatureFileGenerationNoBackground(t *testing.T) {
 
 	expected := `Feature: User Login
 
-	Scenario: Login attempts
-	  When the user enters credentials
-	  When the user clicks login
-	  Then the user sees the dashboard
-	`
+Background:
+  Given the user enters credentials
+  Given the user clicks login
+  Given the user sees the dashboard
+
+Scenario: Login attempts
+`
 
 	generatedFile := generateFeatureFile(feature)
 	fmt.Println("*************** TEST TWO Generated file ********************")
@@ -91,6 +93,6 @@ func TestFeatureFileGenerationNoBackground(t *testing.T) {
 	if !reflect.DeepEqual(generateFeature, control) {
 		t.Errorf("Expected %v, got %v", control, generateFeature)
 	} else {
-		fmt.Println("*************** TEST ONE PASS! ********************")
+		fmt.Println("*************** TEST TWO PASS! ********************")
 	}
 }

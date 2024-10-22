@@ -130,18 +130,25 @@ func generateFeatureFile(feature Feature) string {
 	// Write the feature name
 	builder.WriteString("Feature: " + feature.Name + "\n\n")
 
-	// Find and append common background steps
+	// Check if common steps exist and append them to the existing background
 	commonSteps, newScenarios := findCommonSteps(feature.Scenarios)
 
-	// If a background exists, append new common steps; otherwise, create a new background
 	if len(feature.Background) > 0 {
 		for _, step := range commonSteps {
 			if !contains(feature.Background, step) {
-				feature.Background = append(feature.Background, step)
+				feature.Background = append(feature.Background, step) // Append new unique steps to the existing background
 			}
 		}
+	} else if len(commonSteps) > 0 {
+		// If no existing background, create one
+		builder.WriteString("Background:\n")
+		for _, step := range commonSteps {
+			builder.WriteString("  Given " + step + "\n") // Treating all common steps as Given
+		}
+		builder.WriteString("\n")
 	}
 
+	// Output the existing background if present
 	if len(feature.Background) > 0 {
 		builder.WriteString("Background:\n")
 		for _, step := range feature.Background {
@@ -150,7 +157,7 @@ func generateFeatureFile(feature Feature) string {
 		builder.WriteString("\n")
 	}
 
-	// Include new Scenarios
+	// Include the new Scenarios
 	for _, scenario := range newScenarios {
 		builder.WriteString("Scenario: " + scenario.Name + "\n")
 
@@ -159,24 +166,18 @@ func generateFeatureFile(feature Feature) string {
 			builder.WriteString("  @" + tag + "\n")
 		}
 
-		var stepRange []string
-		stepRange = scenario.Steps
-		if len(newScenarios) == 1 {
-			stepRange = commonSteps
-		}
-		// Include Steps with appropriate prefixes based on the context
-		for _, step := range stepRange {
-			if strings.Contains(step, "enters") || strings.Contains(step, "entered") || strings.Contains(step, "opened") {
-				builder.WriteString("  Given " + step + "\n") // Treating entering or opening steps as Given
+		// Include Steps while determining their prefixes
+		for _, step := range scenario.Steps {
+			if strings.Contains(step, "entered") || strings.Contains(step, "opened") {
+				builder.WriteString("  Given " + step + "\n")
 			} else if strings.Contains(step, "clicks") {
-				builder.WriteString("  When " + step + "\n") // Using When for clicking actions
+				builder.WriteString("  When " + step + "\n")
 			} else if strings.Contains(step, "should") {
-				builder.WriteString("  Then " + step + "\n") // Using Then for assertion steps
+				builder.WriteString("  Then " + step + "\n")
 			} else {
-				builder.WriteString("  When " + step + "\n") // Fallback to When for general steps
+				builder.WriteString("  When " + step + "\n") // Fallback for other step types
 			}
 		}
-
 		builder.WriteString("\n")
 	}
 

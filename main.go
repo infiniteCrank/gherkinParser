@@ -47,6 +47,7 @@ func parseFeatureFile(fileContent string) Feature {
 
 	// Iterate over children of the Feature directly
 	for _, child := range gherkinDocument.Feature.Children {
+		// Check if child is a Background
 		if background := child.Background; background != nil {
 			// Collect Steps from the Background if it exists
 			for _, step := range background.Steps {
@@ -54,6 +55,7 @@ func parseFeatureFile(fileContent string) Feature {
 			}
 		}
 
+		// Check if child is a Scenario
 		if scenario := child.Scenario; scenario != nil {
 			var newScenario Scenario
 			newScenario.Name = scenario.Name
@@ -74,6 +76,42 @@ func parseFeatureFile(fileContent string) Feature {
 	}
 
 	return feature
+}
+
+// Generate a Gherkin feature file from the structured Feature data
+func generateFeatureFile(feature Feature) string {
+	var builder strings.Builder
+
+	// Write the feature name
+	builder.WriteString("Feature: " + feature.Name + "\n\n")
+
+	// Include Background if present
+	if len(feature.Background) > 0 {
+		builder.WriteString("Background:\n")
+		for _, step := range feature.Background {
+			builder.WriteString("  Given " + step + "\n")
+		}
+		builder.WriteString("\n")
+	}
+
+	// Include Scenarios
+	for _, scenario := range feature.Scenarios {
+		builder.WriteString("Scenario: " + scenario.Name + "\n")
+
+		// Include Tags if present
+		for _, tag := range scenario.Tags {
+			builder.WriteString("  @" + tag + "\n")
+		}
+
+		// Include Steps
+		for _, step := range scenario.Steps {
+			builder.WriteString("  When " + step + "\n")
+		}
+
+		builder.WriteString("\n")
+	}
+
+	return builder.String()
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {

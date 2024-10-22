@@ -34,9 +34,10 @@ type Row struct {
 }
 
 type Feature struct {
-	Name       string
-	Scenarios  []Scenario
-	Background []string
+	Name             string
+	Scenarios        []Scenario
+	ScenarioOutlines []ScenarioOutline // Newly added field
+	Background       []string
 }
 
 func parseFeatureFile(fileContent string) Feature {

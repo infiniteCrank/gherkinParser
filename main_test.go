@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -43,11 +44,18 @@ Scenario: Unsuccessful login with invalid credentials
   Then the user should see an error message`
 	// Generate a feature file from the structured data
 	generatedFile := generateFeatureFile(feature)
+	fmt.Println("*************** TEST ONE Generated file ********************")
+	fmt.Println(generatedFile)
 	generateFeature := parseFeatureFile(generatedFile)
+	fmt.Println("*************** TEST ONE generated struct ********************")
+	fmt.Println(fmt.Printf("%+v\n", generateFeature))
+
 	control := parseFeatureFile(expected)
 
 	if !reflect.DeepEqual(generateFeature, control) {
 		t.Errorf("Expected %v, got %v", control, generateFeature)
+	} else {
+		fmt.Println("*************** TEST ONE PASS! ********************")
 	}
 
 }
@@ -67,17 +75,22 @@ func TestFeatureFileGenerationNoBackground(t *testing.T) {
 
 	expected := `Feature: User Login
 
-Scenario: Login attempts
-  When the user enters credentials
-  When the user clicks login
-  Then the user sees the dashboard
-`
+	Scenario: Login attempts
+	  When the user enters credentials
+	  When the user clicks login
+	  Then the user sees the dashboard
+	`
 
 	generatedFile := generateFeatureFile(feature)
+	fmt.Println("*************** TEST TWO Generated file ********************")
+	fmt.Println(generatedFile)
 	generateFeature := parseFeatureFile(generatedFile)
+	fmt.Println("*************** TEST TWO generated struct ********************")
+	fmt.Println(fmt.Printf("%+v\n", generateFeature))
 	control := parseFeatureFile(expected)
-
 	if !reflect.DeepEqual(generateFeature, control) {
 		t.Errorf("Expected %v, got %v", control, generateFeature)
+	} else {
+		fmt.Println("*************** TEST ONE PASS! ********************")
 	}
 }

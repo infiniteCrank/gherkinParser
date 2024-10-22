@@ -159,9 +159,14 @@ func generateFeatureFile(feature Feature) string {
 			builder.WriteString("  @" + tag + "\n")
 		}
 
+		var stepRange []string
+		stepRange = scenario.Steps
+		if len(newScenarios) == 1 {
+			stepRange = commonSteps
+		}
 		// Include Steps with appropriate prefixes based on the context
-		for _, step := range scenario.Steps {
-			if strings.Contains(step, "entered") || strings.Contains(step, "opened") {
+		for _, step := range stepRange {
+			if strings.Contains(step, "enters") || strings.Contains(step, "entered") || strings.Contains(step, "opened") {
 				builder.WriteString("  Given " + step + "\n") // Treating entering or opening steps as Given
 			} else if strings.Contains(step, "clicks") {
 				builder.WriteString("  When " + step + "\n") // Using When for clicking actions

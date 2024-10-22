@@ -11,6 +11,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type ScenarioOutline struct {
+	Name     string
+	Steps    []string  // List of steps, same as in scenario
+	Examples []Example // Example tables
+}
+
 type Scenario struct {
 	Name     string
 	Steps    []string  // List of steps
@@ -28,9 +34,10 @@ type Row struct {
 }
 
 type Feature struct {
-	Name       string
-	Scenarios  []Scenario
-	Background []string
+	Name             string
+	Scenarios        []Scenario
+	ScenarioOutlines []ScenarioOutline // Newly added field
+	Background       []string
 }
 
 func parseFeatureFile(fileContent string) Feature {
@@ -49,7 +56,6 @@ func parseFeatureFile(fileContent string) Feature {
 	for _, child := range gherkinDocument.Feature.Children {
 		// Check if child is a Background
 		if background := child.Background; background != nil {
-			// Collect Steps from the Background if it exists
 			for _, step := range background.Steps {
 				feature.Background = append(feature.Background, step.Text)
 			}
@@ -60,22 +66,60 @@ func parseFeatureFile(fileContent string) Feature {
 			var newScenario Scenario
 			newScenario.Name = scenario.Name
 
-			// Collect Tags if any
 			for _, tag := range scenario.Tags {
 				newScenario.Tags = append(newScenario.Tags, tag.Name)
 			}
 
-			// Collect Steps
 			for _, step := range scenario.Steps {
 				newScenario.Steps = append(newScenario.Steps, step.Text)
 			}
 
-			// Add to the feature's scenarios
 			feature.Scenarios = append(feature.Scenarios, newScenario)
 		}
 	}
 
+	// Generate outlines after collecting scenarios
+	feature.ScenarioOutlines = findScenarioOutlines(feature.Scenarios)
+
 	return feature
+}
+
+// helper function to find scenario outlines
+func findScenarioOutlines(scenarios []Scenario) []ScenarioOutline {
+	var outlines []ScenarioOutline
+	stepMappings := make(map[string][]Scenario) // Map of normalized step strings to scenarios
+
+	// Group scenarios by steps (ignoring tags and names)
+	for _, scenario := range scenarios {
+		// Create a key based on the steps, ignoring tags or names
+		key := strings.Join(scenario.Steps, "|")
+		stepMappings[key] = append(stepMappings[key], scenario)
+	}
+
+	// Create Scenario Outlines for groups with more than one scenario
+	for _, group := range stepMappings {
+		if len(group) > 1 {
+			var outline ScenarioOutline
+			outline.Name = group[0].Name // Base name; you may want to adjust this logic
+
+			// Build the sample table from grouped scenarios
+			var exampleRows []Row
+			for _, scenario := range group {
+				// Assume the first step contains the test data key-value pairs
+				row := make([]string, len(scenario.Steps))
+				for i := range scenario.Steps {
+					row[i] = "DATA_VALUE" // Placeholder; you would replace with actual values
+				}
+				exampleRows = append(exampleRows, Row{Cells: row})
+			}
+
+			outline.Steps = group[0].Steps
+			outline.Examples = []Example{{Title: "Example", Rows: exampleRows}}
+			outlines = append(outlines, outline)
+		}
+	}
+
+	return outlines
 }
 
 // Helper function to identify common steps across scenarios

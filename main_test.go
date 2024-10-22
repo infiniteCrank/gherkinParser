@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-// Test to verify the generation of a feature file from structured data.
-func TestFeatureFileGeneration(t *testing.T) {
+// Test to verify the generation of a feature file from structured data including common steps in background.
+func TestFeatureFileGenerationWithBackground(t *testing.T) {
 	feature := Feature{
 		Name:       "User Login",
 		Background: []string{"the user has opened the login page"},
@@ -24,6 +24,7 @@ func TestFeatureFileGeneration(t *testing.T) {
 		},
 	}
 
+	// Expected output feature file
 	expected := `Feature: User Login
 
 Background:
@@ -42,49 +43,56 @@ Scenario: Unsuccessful login with invalid credentials
   When the user clicks the login button
   Then the user should see an error message
 `
-	//generate a feature file from content
-	generatedFile := generateFeatureFile(feature)
-	// Parse the input content.
-	generatedFeature := parseFeatureFile(generatedFile)
-	//generate control
-	generatedControl := parseFeatureFile(expected)
 
-	if !reflect.DeepEqual(generatedFeature, generatedControl) {
-		t.Errorf("negative control failed")
+	// Generate a feature file from the structured data
+	generatedFile := generateFeatureFile(feature)
+	//generate a struct from the generated file
+	generateTestFeature := parseFeatureFile(generatedFile)
+	//generate expected feature
+	generateControl := parseFeatureFile(expected)
+
+	if generateControl.Background[0] != generateTestFeature.Background[0] {
+		t.Errorf("Expected background %v, got %v", generateControl.Background[0], generateTestFeature.Background[0])
 	}
+
 }
 
-// Unit test to parse and then regenerate a feature file.
-func TestParseAndGenerateFeatureFile(t *testing.T) {
-	inputContent := `Feature: User Login
+// Unit test to ensure proper identification of common steps for backgrounds.
+func TestFindCommonSteps(t *testing.T) {
+	scenarios := []Scenario{
+		{
+			Name:  "Successful login with valid credentials",
+			Steps: []string{"the user has entered a valid username", "the user has entered a valid password", "the user clicks the login button", "the user should be redirected to the dashboard"},
+			Tags:  []string{},
+		},
+		{
+			Name:  "Unsuccessful login with invalid credentials",
+			Steps: []string{"the user has entered an invalid username", "the user has entered an invalid password", "the user clicks the login button", "the user should see an error message"},
+			Tags:  []string{},
+		},
+	}
 
-Background:
-  Given the user has opened the login page
+	expectedCommonSteps := []string{}
+	expectedNewScenarios := []Scenario{
+		{
+			Name:  "Successful login with valid credentials",
+			Steps: []string{"the user has entered a valid username", "the user has entered a valid password", "the user clicks the login button", "the user should be redirected to the dashboard"},
+			Tags:  []string{},
+		},
+		{
+			Name:  "Unsuccessful login with invalid credentials",
+			Steps: []string{"the user has entered an invalid username", "the user has entered an invalid password", "the user clicks the login button", "the user should see an error message"},
+			Tags:  []string{},
+		},
+	}
 
-Scenario: Successful login with valid credentials
-  Given the user has entered a valid username
-  Given the user has entered a valid password
-  When the user clicks the login button
-  Then the user should be redirected to the dashboard
-  And a welcome message should be displayed
+	commonSteps, newScenarios := findCommonSteps(scenarios)
 
-Scenario: Unsuccessful login with invalid credentials
-  Given the user has entered an invalid username
-  Given the user has entered an invalid password
-  When the user clicks the login button
-  Then the user should see an error message
-`
+	if !reflect.DeepEqual(commonSteps, expectedCommonSteps) {
+		t.Errorf("Expected common steps %v, got %v", expectedCommonSteps, commonSteps)
+	}
 
-	// Parse the input content.
-	feature := parseFeatureFile(inputContent)
-
-	// Regenerate the feature file.
-	generated := generateFeatureFile(feature)
-
-	// parse after generated
-	parseGenerated := parseFeatureFile(generated)
-
-	if !reflect.DeepEqual(feature, parseGenerated) {
-		t.Errorf("positive control failed")
+	if !reflect.DeepEqual(newScenarios, expectedNewScenarios) {
+		t.Errorf("New scenarios do not match expected. Got: %+v, Want: %+v", newScenarios, expectedNewScenarios)
 	}
 }

@@ -1,8 +1,25 @@
 Feature: User Login
 
-Scenario Outline: Login Scenario Outline
+Background:
+  Given the user has opened the login page
+  Given the user clicks the login button
+
+Scenario: Successful login with valid credentials
+  Given the user has entered a valid username
+  Given the user has entered a valid password
+  When the user clicks the login button
+  Then the user should be redirected to the dashboard
+  And a welcome message should be displayed
+
+Scenario: Unsuccessful login with invalid credentials
+  Given the user has entered an invalid username
+  Given the user has entered an invalid password
+  When the user clicks the login button
+  Then the user should see an error message
+
+Scenario Outline: Login attempts with different usernames and passwords
   Given the user has entered <username>
-  Given the user has entered <password>
+  And the user has entered <password>
   When the user clicks the login button
   Then the user should see <result>
 

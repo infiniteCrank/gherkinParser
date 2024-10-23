@@ -107,8 +107,8 @@ func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
 		newScenario.Tags = scenario.Tags
 
 		for _, step := range scenario.Steps {
-			if !contains(commonSteps, step.Text) { // Check using only the text for commonality
-				newScenario.Steps = append(newScenario.Steps, step) // Keep the full Step struct
+			if !contains(commonSteps, step.Text) {
+				newScenario.Steps = append(newScenario.Steps, step)
 			}
 		}
 		newScenarios = append(newScenarios, newScenario)

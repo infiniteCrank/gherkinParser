@@ -31,10 +31,18 @@ type Row struct {
 	Cells []string
 }
 
+type ScenarioOutline struct {
+	Name     string
+	Steps    []Step    // List of steps with prefixes
+	Tags     []string  // List of tags.
+	Examples []Example // Example tables
+}
+
 type Feature struct {
-	Name       string
-	Scenarios  []Scenario
-	Background []string
+	Name            string
+	Scenarios       []Scenario
+	ScenarioOutline []ScenarioOutline
+	Background      []string
 }
 
 func parseFeatureFile(fileContent string) Feature {
@@ -72,8 +80,10 @@ func parseFeatureFile(fileContent string) Feature {
 			for _, step := range scenario.Steps {
 				newScenario.Steps = append(newScenario.Steps, Step{Text: step.Text, Prefix: step.Keyword})
 			}
+
 			// Add to feature's scenarios
 			feature.Scenarios = append(feature.Scenarios, newScenario)
+
 		}
 	}
 
@@ -87,7 +97,9 @@ func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
 	// Count occurrences of each step
 	for _, scenario := range scenarios {
 		for _, step := range scenario.Steps {
-			stepCount[step.Text]++ // Count based on the step text
+			if step.Prefix != "When " { // Don't include steps that have when prefix in the background
+				stepCount[step.Text]++ // Count based on the step text
+			}
 		}
 	}
 

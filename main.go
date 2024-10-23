@@ -39,10 +39,10 @@ type ScenarioOutline struct {
 }
 
 type Feature struct {
-	Name            string
-	Scenarios       []Scenario
-	ScenarioOutline []ScenarioOutline
-	Background      []string
+	Name             string
+	Scenarios        []Scenario
+	ScenarioOutlines []ScenarioOutline
+	Background       []string
 }
 
 func parseFeatureFile(fileContent string) Feature {
@@ -68,21 +68,70 @@ func parseFeatureFile(fileContent string) Feature {
 
 		// Check if child is a Scenario
 		if scenario := child.Scenario; scenario != nil {
-			var newScenario Scenario
-			newScenario.Name = scenario.Name
 
-			// Collect Tags if any
-			for _, tag := range scenario.Tags {
-				newScenario.Tags = append(newScenario.Tags, tag.Name)
+			//check to see if scenario outline
+			if child.Scenario.Keyword == "Scenario Outline" {
+				outline := child.Scenario
+				var newOutline ScenarioOutline
+				newOutline.Name = outline.Name
+
+				// Collect Tags if any
+				for _, tag := range outline.Tags {
+					newOutline.Tags = append(newOutline.Tags, tag.Name)
+				}
+
+				// Collect Steps from the Scenario Outline
+				for _, step := range outline.Steps {
+					newOutline.Steps = append(newOutline.Steps, Step{Text: step.Text, Prefix: step.Keyword})
+				}
+
+				// Collect Example Tables from the Scenario Outline
+				for _, example := range outline.Examples {
+					var newExample Example
+					newExample.Title = example.Description // Set the description as the title
+
+					// Add header
+					if example.TableHeader != nil {
+						headerCells := make([]string, len(example.TableHeader.Cells))
+						for i, cell := range example.TableHeader.Cells {
+							headerCells[i] = cell.Value
+						}
+						newExample.Rows = append(newExample.Rows, Row{Cells: headerCells})
+					}
+
+					// Add rows in the TableBody
+					for _, row := range example.TableBody {
+						rowCells := make([]string, len(row.Cells))
+						for i, cell := range row.Cells {
+							rowCells[i] = cell.Value
+						}
+						newExample.Rows = append(newExample.Rows, Row{Cells: rowCells})
+					}
+
+					newOutline.Examples = append(newOutline.Examples, newExample)
+				}
+
+				// Add the outline to feature's ScenarioOutlines
+				feature.ScenarioOutlines = append(feature.ScenarioOutlines, newOutline)
+
+			} else {
+
+				var newScenario Scenario
+				newScenario.Name = scenario.Name
+
+				// Collect Tags if any
+				for _, tag := range scenario.Tags {
+					newScenario.Tags = append(newScenario.Tags, tag.Name)
+				}
+
+				// Collect Steps with their appropriate prefixes
+				for _, step := range scenario.Steps {
+					newScenario.Steps = append(newScenario.Steps, Step{Text: step.Text, Prefix: step.Keyword})
+				}
+
+				// Add to feature's scenarios
+				feature.Scenarios = append(feature.Scenarios, newScenario)
 			}
-
-			// Collect Steps with their appropriate prefixes
-			for _, step := range scenario.Steps {
-				newScenario.Steps = append(newScenario.Steps, Step{Text: step.Text, Prefix: step.Keyword})
-			}
-
-			// Add to feature's scenarios
-			feature.Scenarios = append(feature.Scenarios, newScenario)
 
 		}
 	}
@@ -146,28 +195,50 @@ func generateFeatureFile(feature Feature) string {
 	// Write the feature name
 	builder.WriteString("Feature: " + feature.Name + "\n\n")
 
-	// Find and append common background steps
+	// Identify and append common background steps
 	commonSteps, newScenarios := findCommonSteps(feature.Scenarios)
 
-	// Append common steps if the background exists
+	// Append common steps to the existing background
 	if len(feature.Background) > 0 {
 		for _, step := range commonSteps {
-			if !contains(feature.Background, step) {
-				feature.Background = append(feature.Background, step) // Append new unique steps to the existing background
+			if !contains(feature.Background, step) && !strings.HasPrefix(step, "When") {
+				// Append new unique steps to the existing background, exclude "When" steps
+				feature.Background = append(feature.Background, step)
 			}
 		}
 	}
 
-	// Output the existing background if present
+	// If no existing background, create one with common steps
 	if len(feature.Background) > 0 {
 		builder.WriteString("Background:\n")
 		for _, step := range feature.Background {
-			builder.WriteString("  Given " + step + "\n") // All background steps are Given
+			builder.WriteString("  Given " + step + "\n") // All background steps are "Given"
 		}
 		builder.WriteString("\n")
 	}
 
-	// Include new Scenarios
+	// Include the existing scenario outlines if they exist
+	for _, outline := range feature.ScenarioOutlines {
+		builder.WriteString("Scenario Outline: " + outline.Name + "\n")
+
+		// Include Example Table
+		builder.WriteString("Examples:\n")
+		for _, example := range outline.Examples {
+			for _, row := range example.Rows {
+				builder.WriteString("  | ")
+				builder.WriteString(strings.Join(row.Cells, " | "))
+				builder.WriteString(" |\n")
+			}
+		}
+
+		// Include Steps from Scenario Outline
+		for _, step := range outline.Steps {
+			builder.WriteString(step.Prefix + " " + step.Text + "\n")
+		}
+		builder.WriteString("\n")
+	}
+
+	// Include new scenarios
 	for _, scenario := range newScenarios {
 		builder.WriteString("Scenario: " + scenario.Name + "\n")
 
@@ -178,8 +249,7 @@ func generateFeatureFile(feature Feature) string {
 
 		// Include Steps with their prefixes
 		for _, step := range scenario.Steps {
-			// Use the stored prefix of each step to generate the output
-			builder.WriteString(step.Prefix + step.Text + "\n")
+			builder.WriteString(step.Prefix + " " + step.Text + "\n")
 		}
 		builder.WriteString("\n") // Separate scenarios with a newline
 	}

@@ -11,13 +11,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Scenario struct {
-	Name     string
-	Steps    []string  // List of steps
-	Tags     []string  // List of tags
-	Examples []Example // List of example tables
+type Step struct {
+	Text   string // The actual step text
+	Prefix string // The keyword prefix (Given, When, Then)
 }
 
+type Scenario struct {
+	Name     string
+	Steps    []Step    // List of steps with keywords.
+	Tags     []string  // List of tags.
+	Examples []Example // List of example tables.
+}
 type Example struct {
 	Title string
 	Rows  []Row
@@ -45,7 +49,6 @@ func parseFeatureFile(fileContent string) Feature {
 	var feature Feature
 	feature.Name = gherkinDocument.Feature.Name
 
-	// Iterate over children of the Feature directly
 	for _, child := range gherkinDocument.Feature.Children {
 		// Check if child is a Background
 		if background := child.Background; background != nil {
@@ -65,12 +68,11 @@ func parseFeatureFile(fileContent string) Feature {
 				newScenario.Tags = append(newScenario.Tags, tag.Name)
 			}
 
-			// Collect Steps
+			// Collect Steps with their appropriate prefixes
 			for _, step := range scenario.Steps {
-				newScenario.Steps = append(newScenario.Steps, step.Text)
+				newScenario.Steps = append(newScenario.Steps, Step{Text: step.Text, Prefix: step.Keyword})
 			}
-
-			// Add to the feature's scenarios
+			// Add to feature's scenarios
 			feature.Scenarios = append(feature.Scenarios, newScenario)
 		}
 	}
@@ -81,9 +83,11 @@ func parseFeatureFile(fileContent string) Feature {
 // Helper function to identify common steps across scenarios
 func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
 	stepCount := make(map[string]int)
+
+	// Count occurrences of each step
 	for _, scenario := range scenarios {
 		for _, step := range scenario.Steps {
-			stepCount[step]++
+			stepCount[step.Text]++ // Count based on the step text
 		}
 	}
 
@@ -103,8 +107,8 @@ func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
 		newScenario.Tags = scenario.Tags
 
 		for _, step := range scenario.Steps {
-			if !contains(commonSteps, step) {
-				newScenario.Steps = append(newScenario.Steps, step)
+			if !contains(commonSteps, step.Text) { // Check using only the text for commonality
+				newScenario.Steps = append(newScenario.Steps, step) // Keep the full Step struct
 			}
 		}
 		newScenarios = append(newScenarios, newScenario)
@@ -130,34 +134,28 @@ func generateFeatureFile(feature Feature) string {
 	// Write the feature name
 	builder.WriteString("Feature: " + feature.Name + "\n\n")
 
-	// Check if common steps exist and append them to the existing background
+	// Find and append common background steps
 	commonSteps, newScenarios := findCommonSteps(feature.Scenarios)
 
+	// Append common steps if the background exists
 	if len(feature.Background) > 0 {
 		for _, step := range commonSteps {
 			if !contains(feature.Background, step) {
 				feature.Background = append(feature.Background, step) // Append new unique steps to the existing background
 			}
 		}
-	} else if len(commonSteps) > 0 {
-		// If no existing background, create one
-		builder.WriteString("Background:\n")
-		for _, step := range commonSteps {
-			builder.WriteString("  Given " + step + "\n") // Treating all common steps as Given
-		}
-		builder.WriteString("\n")
 	}
 
 	// Output the existing background if present
 	if len(feature.Background) > 0 {
 		builder.WriteString("Background:\n")
 		for _, step := range feature.Background {
-			builder.WriteString("  Given " + step + "\n")
+			builder.WriteString("  Given " + step + "\n") // All background steps are Given
 		}
 		builder.WriteString("\n")
 	}
 
-	// Include the new Scenarios
+	// Include new Scenarios
 	for _, scenario := range newScenarios {
 		builder.WriteString("Scenario: " + scenario.Name + "\n")
 
@@ -166,19 +164,12 @@ func generateFeatureFile(feature Feature) string {
 			builder.WriteString("  @" + tag + "\n")
 		}
 
-		// Include Steps while determining their prefixes
+		// Include Steps with their prefixes
 		for _, step := range scenario.Steps {
-			if strings.Contains(step, "entered") || strings.Contains(step, "opened") {
-				builder.WriteString("  Given " + step + "\n")
-			} else if strings.Contains(step, "clicks") {
-				builder.WriteString("  When " + step + "\n")
-			} else if strings.Contains(step, "should") {
-				builder.WriteString("  Then " + step + "\n")
-			} else {
-				builder.WriteString("  When " + step + "\n") // Fallback for other step types
-			}
+			// Use the stored prefix of each step to generate the output
+			builder.WriteString(step.Prefix + step.Text + "\n")
 		}
-		builder.WriteString("\n")
+		builder.WriteString("\n") // Separate scenarios with a newline
 	}
 
 	return builder.String()

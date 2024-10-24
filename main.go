@@ -140,12 +140,21 @@ func parseFeatureFile(fileContent string) Feature {
 }
 
 // Helper function to identify common steps across scenarios
-func findCommonSteps(scenarios []Scenario) ([]string, []Scenario) {
+func findCommonSteps(scenarios []Scenario, scenarioOutlines []ScenarioOutline) ([]string, []Scenario) {
 	stepCount := make(map[string]int)
 
-	// Count occurrences of each step
+	// Count occurrences of each step in scenarios
 	for _, scenario := range scenarios {
 		for _, step := range scenario.Steps {
+			if step.Prefix != "When " { // Don't include steps that have when prefix in the background
+				stepCount[step.Text]++ // Count based on the step text
+			}
+		}
+	}
+
+	// Count occurrences of each step in scenario Outlines
+	for _, scenarioOutline := range scenarioOutlines {
+		for _, step := range scenarioOutline.Steps {
 			if step.Prefix != "When " { // Don't include steps that have when prefix in the background
 				stepCount[step.Text]++ // Count based on the step text
 			}
@@ -196,7 +205,7 @@ func generateFeatureFile(feature Feature) string {
 	builder.WriteString("Feature: " + feature.Name + "\n\n")
 
 	// Identify and append common background steps
-	commonSteps, newScenarios := findCommonSteps(feature.Scenarios)
+	commonSteps, newScenarios := findCommonSteps(feature.Scenarios, feature.ScenarioOutlines)
 
 	// Append common steps to the existing background
 	if len(feature.Background) > 0 {
@@ -221,6 +230,11 @@ func generateFeatureFile(feature Feature) string {
 	for _, outline := range feature.ScenarioOutlines {
 		builder.WriteString("Scenario Outline: " + outline.Name + "\n")
 
+		// Include Steps from Scenario Outline
+		for _, step := range outline.Steps {
+			builder.WriteString(step.Prefix + " " + step.Text + "\n")
+		}
+
 		// Include Example Table
 		builder.WriteString("Examples:\n")
 		for _, example := range outline.Examples {
@@ -231,10 +245,6 @@ func generateFeatureFile(feature Feature) string {
 			}
 		}
 
-		// Include Steps from Scenario Outline
-		for _, step := range outline.Steps {
-			builder.WriteString(step.Prefix + " " + step.Text + "\n")
-		}
 		builder.WriteString("\n")
 	}
 

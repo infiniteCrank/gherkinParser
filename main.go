@@ -164,7 +164,7 @@ func findCommonSteps(scenarios []Scenario, scenarioOutlines []ScenarioOutline) (
 	// Identify steps that are common to all scenarios
 	var commonSteps []string
 	for step, count := range stepCount {
-		if count == len(scenarios) {
+		if count == len(scenarios) || count == len(scenarios)+len(scenarioOutlines) {
 			commonSteps = append(commonSteps, step)
 		}
 	}
@@ -221,7 +221,7 @@ func generateFeatureFile(feature Feature) string {
 	if len(feature.Background) > 0 {
 		builder.WriteString("Background:\n")
 		for _, step := range feature.Background {
-			builder.WriteString("  Given " + step + "\n") // All background steps are "Given"
+			builder.WriteString("  Given " + step + "\n")
 		}
 		builder.WriteString("\n")
 	}
@@ -230,9 +230,11 @@ func generateFeatureFile(feature Feature) string {
 	for _, outline := range feature.ScenarioOutlines {
 		builder.WriteString("Scenario Outline: " + outline.Name + "\n")
 
-		// Include Steps from Scenario Outline
+		// Include Steps from Scenario Outline, excluding common steps
 		for _, step := range outline.Steps {
-			builder.WriteString(step.Prefix + " " + step.Text + "\n")
+			if !contains(commonSteps, step.Text) {
+				builder.WriteString(step.Prefix + " " + step.Text + "\n")
+			}
 		}
 
 		// Include Example Table
@@ -257,9 +259,11 @@ func generateFeatureFile(feature Feature) string {
 			builder.WriteString("  @" + tag + "\n")
 		}
 
-		// Include Steps with their prefixes
+		// Include Steps with their prefixes, excluding common steps
 		for _, step := range scenario.Steps {
-			builder.WriteString(step.Prefix + " " + step.Text + "\n")
+			if !contains(commonSteps, step.Text) {
+				builder.WriteString(step.Prefix + " " + step.Text + "\n")
+			}
 		}
 		builder.WriteString("\n") // Separate scenarios with a newline
 	}

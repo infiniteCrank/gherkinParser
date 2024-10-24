@@ -25,7 +25,7 @@ Scenario Outline: Login attempts with different usernames and passwords
   When the user clicks the login button
   Then the user should see <result>
 
-Examples:
-  | username      | password     | result              |
-  | valid_user    | valid_pass   | redirected to dashboard |
-  | invalid_user  | invalid_pass | error message       |
+  Examples:
+    | username      | password     | result              |
+    | valid_user    | valid_pass   | redirected to dashboard |
+    | invalid_user  | invalid_pass | error message       |

@@ -233,15 +233,15 @@ func generateFeatureFile(feature Feature) string {
 		// Include Steps from Scenario Outline, excluding common steps
 		for _, step := range outline.Steps {
 			if !contains(commonSteps, step.Text) {
-				builder.WriteString(step.Prefix + " " + step.Text + "\n")
+				builder.WriteString("  " + step.Prefix + " " + step.Text + "\n")
 			}
 		}
 
 		// Include Example Table
-		builder.WriteString("Examples:\n")
+		builder.WriteString("  Examples:\n")
 		for _, example := range outline.Examples {
 			for _, row := range example.Rows {
-				builder.WriteString("  | ")
+				builder.WriteString("    | ")
 				builder.WriteString(strings.Join(row.Cells, " | "))
 				builder.WriteString(" |\n")
 			}
@@ -262,7 +262,7 @@ func generateFeatureFile(feature Feature) string {
 		// Include Steps with their prefixes, excluding common steps
 		for _, step := range scenario.Steps {
 			if !contains(commonSteps, step.Text) {
-				builder.WriteString(step.Prefix + " " + step.Text + "\n")
+				builder.WriteString("  " + step.Prefix + " " + step.Text + "\n")
 			}
 		}
 		builder.WriteString("\n") // Separate scenarios with a newline

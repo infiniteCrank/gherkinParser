@@ -238,7 +238,7 @@ func generateFeatureFile(feature Feature) string {
 		}
 
 		// Include Example Table
-		builder.WriteString("  Examples:\n")
+		builder.WriteString("\n  Examples:\n")
 		for _, example := range outline.Examples {
 			for _, row := range example.Rows {
 				builder.WriteString("    | ")
